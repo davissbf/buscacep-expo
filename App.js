@@ -1,21 +1,130 @@
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  ImageBackground,
+  Dimensions
+} from 'react-native';
+
+import FildsCep from './components/FildsCep';
 
 export default function App() {
+  const [cep, setCep] = useState('');
+  const [adress, setAdress] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [error, setError] = useState('');
+
+  async function callCep(cep) {
+    const validatedCep = cep.replace(/[^0-9]/g, '');
+
+    setSearching(true);
+    if(validatedCep === '') {
+      setSearching(false);
+    }
+
+    if(validatedCep.length === 8) {
+      await fetch(`https://viacep.com.br/ws/${validatedCep}/json`)
+            .then(response => response.json())
+            .then(obj => {
+              setAdress(obj);
+              setError('');
+            })
+            .catch(() => {
+              setError('Ops CEP inválido...');
+              setAdress('');
+            })
+            .finally(() => setSearching(false));
+    }
+  }
+
+  function clearFilds() {
+    setAdress('');
+    setCep('');
+  }
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <ImageBackground
+      source={require('./assets/back.png')}
+      style={styles.background}
+    >
+      <View style={{ paddingHorizontal: 40, marginTop: 25 }}>
+        <Text style={styles.paragraph}>Busca CEP</Text>
+        <Text style={styles.descriptionParagraph}>No primeiro campo digite um CEP.</Text>
+
+        {error === '' && <Text style={styles.textError}>{error}</Text>}
+        {searching && <Text style={styles.textResearching}>Buscando CEP...</Text>}
+        <FildsCep
+          autoFocus={true}
+          onFocus={text => setCep(text)}
+          onChangeText={text => callCep(text)}
+          clearTextOnFocus={true}
+          title='CEP'
+          fildType='number-pad'
+          maxLength={9}
+          value={cep}
+        />
+        <FildsCep title='Endereço' value={adress.logradouro} />
+        <FildsCep title='Casa' />
+        <FildsCep title='Complemento' />
+        <FildsCep title='Bairro' value={adress.bairro} />
+        <FildsCep title='Cidade' value={adress.localidade} />
+        <FildsCep title='UF' value={adress.uf} />
+        <View style={styles.buttonClear}>
+          <Text
+            onPress={clearFilds}
+            style={styles.textButtonClear}
+          >Limpar Campos</Text>
+        </View>
+        <StatusBar style="auto" fildType='default' />
+      </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
+  background: {
+    width: Dimensions.get("window").width,
+    height: Dimensions.get("window").height,
+  },
+  paragraph: {
+    color: '#5222db',
+    fontSize: 40,
+    fontWeight: 'bold',
+  },
+  descriptionParagraph: {
+    color: '#9f9cdf',
+    fontSize: 16,
+    lineHeight: 22,
+    paddingVertical: 10,
+    paddingRight: 85,
+    marginBottom: 35,
+  },
+  buttonClear: {
+    flexDirection: 'row',
     justifyContent: 'center',
+    backgroundColor: '#522268',
+    padding: 10,
+    marginTop: 30,
+    borderRadius: 46,
+  },
+  textButtonClear: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    width: '100%',
+    textAlign: 'center',
+  },
+  textError: {
+    color: '#d81e5b',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  textResearching: {
+    color: '#b7b5e4',
+    fontSize: 18,
+    textAlign: 'center',
   },
 });
